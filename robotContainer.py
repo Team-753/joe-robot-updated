@@ -21,7 +21,7 @@ class RobotContainer:
         self.driveTrain = DriveTrain(self.config)
         self.joystick = button.CommandJoystick(0)
         
-        self.driveTrain.setDefaultCommand(cmd.run(lambda: self.driveTrain.joystickDrive(self.getJoystickInput())))
+        self.driveTrain.setDefaultCommand(cmd.run(lambda: self.driveTrain.joystickDrive(self.getJoystickInput(), True), [self.driveTrain]))
         
     def getJoystickInput(self):
         inputs = (self.joystick.getX(), self.joystick.getY(), self.joystick.getZ())

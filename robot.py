@@ -45,26 +45,6 @@ class MyRobot(commands2.TimedCommandRobot):
     def teleopInit(self):
         if (self.autoCommand != commands2.Command()):
             self.autoCommand.cancel()
-        self.robotContainer.teleopInit()
-        
-    def teleopPeriodic(self):
-        '''This function is called periodically during operator control.'''
-        pass
-    
-    def disabledPeriodic(self):
-        ''' Runs while the robot is idle '''
-        self.robotContainer.disabledPeriodic()
-        
-    def disabledInit(self) -> None:
-        '''self.driveTrain.coast()'''
-        self.robotContainer.disabledInit()
-    
-    def testInit(self) -> None:
-        self.robotContainer.testInit()
-    
-    def testPeriodic(self) -> None:
-        self.robotContainer.testPeriodic()
-    
 
 if __name__ == "__main__":
     wpilib.run(MyRobot)
