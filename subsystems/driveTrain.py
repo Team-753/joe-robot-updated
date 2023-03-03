@@ -2,7 +2,7 @@ import commands2
 from wpimath import kinematics, geometry
 import navx
 from subsystems.swerveModule import SwerveModule
-from math import hypot
+from math import hypot, radians
 from wpilib import SmartDashboard
 
 class DriveTrain(commands2.SubsystemBase):
@@ -31,16 +31,17 @@ class DriveTrain(commands2.SubsystemBase):
         
         teleopConstants = self.config["driverStation"]["teleoperatedRobotConstants"]
         self.maxAngularVelocity = teleopConstants["teleopVelLimit"] / hypot(self.config["RobotDimensions"]["trackWidth"] / 2, self.config["RobotDimensions"]["wheelBase"] / 2)
+        self.navx.setAngleAdjustment(self.navx.getAngle())
         
     def joystickDrive(self, inputs: list, fieldOrient: bool) -> None:
-        x, y, z = inputs[0], inputs[1], inputs[2]
+        y, x, z = inputs[0], inputs[1], inputs[2]
         x *= self.kMaxSpeed
         y *= self.kMaxSpeed
         z*= self.maxAngularVelocity
         if x == 0 and y == 0 and z == 0:
             self.coast()
         else:
-            if False: # if fieldOrient:
+            if fieldOrient:
                 swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds.fromFieldRelativeSpeeds(kinematics.ChassisSpeeds(x, y, z), self.getNAVXRotation2d()))
             else:
                 swerveModuleStates = self.KINEMATICS.toSwerveModuleStates(kinematics.ChassisSpeeds(x, y, z))

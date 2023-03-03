@@ -18,12 +18,14 @@ class SwerveModule:
         self.driveMotor = rev.CANSparkMax(self.config["driveMotorID"], rev.CANSparkMax.MotorType.kBrushless)
         self.driveMotor.enableVoltageCompensation(12.0)
         self.driveMotor.setIdleMode(rev.CANSparkMax.IdleMode.kCoast)
-        self.driveEncoder = self.driveMotor.getEncoder(countsPerRev = 42)
+        self.driveMotor.setInverted(False)
+        self.driveEncoder = self.driveMotor.getEncoder()
         
         self.turnMotor = rev.CANSparkMax(self.config["turnMotorID"], rev.CANSparkMax.MotorType.kBrushless)
         self.turnMotor.enableVoltageCompensation(12.0)
         self.turnMotor.setIdleMode(rev.CANSparkMax.IdleMode.kCoast)
-        self.turnEncoder = self.turnMotor.getEncoder(countsPerRev = 42)
+        self.turnMotor.setInverted(False)
+        self.turnEncoder = self.turnMotor.getEncoder()
         
         self.absoluteEncoder = AnalogEncoder(self.config["encoderID"])
         self.absoluteOffset = self.config["encoderOffset"]
@@ -48,10 +50,15 @@ class SwerveModule:
         self.driveEncoder.setPosition(0)
     
     def getAbsolutePositionZeroThreeSixty(self):
-        return (self.absoluteEncoder.getAbsolutePosition() * 360) - self.absoluteOffset
+        val = ((1 - self.absoluteEncoder.getAbsolutePosition()) * 360) - self.absoluteOffset
+        if val < 0:
+            val += 360
+        elif val > 360:
+            val -= 360
+        return val
     
     def absoluteToMotorRotations(self):
-        absolute = self.getAbsolutePositionZeroThreeSixty()
+        absolute = 1 - self.getAbsolutePositionZeroThreeSixty()
         absolute *= self.steeringRatio # first converting it from wheel to motor relative
         absolute /= 360 # converting from degrees to rotations
         absolute *= 42 # converting from rotations into ticks
@@ -77,8 +84,11 @@ class SwerveModule:
         voltageTargetFF = self.maxVoltage * state.speed / self.maxWheelVelocity
         drivePIDOutputVolts = self.drivePID.calculate((self.driveEncoder.getVelocity() * math.pi * self.wheelDiameterMeters * self.drivingRatio) / (60 * 42), state.speed)
         self.driveMotor.setVoltage(voltageTargetFF + drivePIDOutputVolts)
-        
-        turnOutputVolts = self.turnPID.calculate(self.getWheelAngleDegrees() - 180, desiredStateAngle)
+        if self.moduleName == "rearRight":
+            desiredStateAngle -= 180
+            if desiredStateAngle < -180:
+                desiredStateAngle += 360
+        turnOutputVolts = self.turnPID.calculate(self.getAbsolutePositionZeroThreeSixty() - 180, desiredStateAngle)
         self.turnMotor.setVoltage(turnOutputVolts)
         
     def coast(self):
@@ -88,5 +98,5 @@ class SwerveModule:
     def reportPosition(self):
         SmartDashboard.putNumber(f"{self.moduleName} Drive Position", (self.driveEncoder.getPosition() * math.pi * self.wheelDiameterMeters * self.drivingRatio) / 42)
         SmartDashboard.putNumber(f"{self.moduleName} Drive Velocity", (self.driveEncoder.getVelocity() * math.pi * self.wheelDiameterMeters * self.drivingRatio) / (60 * 42))
-        SmartDashboard.putNumber(f"{self.moduleName} ABS Turn Position", self.getAbsolutePositionZeroThreeSixty() - 180)
+        SmartDashboard.putNumber(f"{self.moduleName} ABS Turn Position", self.getAbsolutePositionZeroThreeSixty())
         SmartDashboard.putNumber(f"{self.moduleName} INT Turn Position", self.getWheelAngleDegrees())
